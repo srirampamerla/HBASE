@@ -1,0 +1,218 @@
+# create hbase table
+hbase(main):002:0> create 'hbase_connect_hive','order','sales_det','product',
+hbase(main):003:0* 'personal'
+0 row(s) in 5.2140 seconds
+
+=> Hbase::Table -
+#create hbase coonected hive table
+hbase_connect_hive
+hbase(main):004:0> list
+TABLE
+customer
+hbase_connect_hive
+2 row(s) in 0.0090 seconds
+
+=> ["customer", "hbase_connect_hive"]
+hbase(main):005:0> describe 'hbase_connect_hive'
+Table hbase_connect_hive is ENABLED
+hbase_connect_hive
+COLUMN FAMILIES DESCRIPTION
+{NAME => 'order', DATA_BLOCK_ENCODING => 'NONE', BLOOMFILTER => 'ROW', REPLICATION_SCOPE => '0', VERSIONS => '1', COMPRESSION => 'NONE', MIN_VERSIONS => '0', TTL => 'FOREVER', KEEP_DELETED_
+CELLS => 'FALSE', BLOCKSIZE => '65536', IN_MEMORY => 'false', BLOCKCACHE => 'true'}
+{NAME => 'personal', DATA_BLOCK_ENCODING => 'NONE', BLOOMFILTER => 'ROW', REPLICATION_SCOPE => '0', VERSIONS => '1', COMPRESSION => 'NONE', MIN_VERSIONS => '0', TTL => 'FOREVER', KEEP_DELET
+ED_CELLS => 'FALSE', BLOCKSIZE => '65536', IN_MEMORY => 'false', BLOCKCACHE => 'true'}
+{NAME => 'product', DATA_BLOCK_ENCODING => 'NONE', BLOOMFILTER => 'ROW', REPLICATION_SCOPE => '0', VERSIONS => '1', COMPRESSION => 'NONE', MIN_VERSIONS => '0', TTL => 'FOREVER', KEEP_DELETE
+D_CELLS => 'FALSE', BLOCKSIZE => '65536', IN_MEMORY => 'false', BLOCKCACHE => 'true'}
+{NAME => 'sales_det', DATA_BLOCK_ENCODING => 'NONE', BLOOMFILTER => 'ROW', REPLICATION_SCOPE => '0', VERSIONS => '1', COMPRESSION => 'NONE', MIN_VERSIONS => '0', TTL => 'FOREVER', KEEP_DELE
+TED_CELLS => 'FALSE', BLOCKSIZE => '65536', IN_MEMORY => 'false', BLOCKCACHE => 'true'}
+4 row(s) in 0.6210 seconds
+
+#create hbase coonected hive table
+
+hive> create external table hbase_sales
+    > (
+    > ordernumber int,
+    > quantityordered int,
+    > priceeach float,
+    > orderlinenumber int,
+    > sales float,
+    > status string,
+    > qtr_id int,
+    > month_id int,
+    > year_id int,
+    > productline string,
+    > msrp int,
+    > productcode string,
+    > phone string,
+    > city string,
+    > state string,
+    > postalcode string,
+    > country string,
+    > territory string,
+    > contactlastname string,
+    > contactfirstname string,
+    > dealsize string
+    > )
+    > row format delimited
+    > fields terminated by ','
+    > stored by 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+    > with SERDEPROPERTIES("hbase.columns.mapping"=":key,order:quantityordered,order:priceeach,order:orderlinenumber,sales_det:sales,sales_det:status,sales_det:qtr_id,sales_det:month_id,sales_det:year_id,product:productline,product:msrp,product:productcode,personal:phone,personal:city,personal:state,personal:postalcode,personal:country,personal:territory,personal:contactlastname,personal:contactfirstname,order:dealsize")
+    > TBLPROPERTIES("hbase.table.name"="hbase_connect_hive");
+OK
+Time taken: 0.236 seconds
+
+already created one table with this schema only. so i am using  directly that table name to load the data.
+
+hive> describe sales_order_data_csv_v1;
+OK
+ordernumber             int
+quantityordered         int
+priceeach               float
+orderlinenumber         int
+sales                   float
+status                  string
+qtr_id                  int
+month_id                int
+year_id                 int
+productline             string
+msrp                    int
+productcode             string
+phone                   string
+city                    string
+state                   string
+postalcode              string
+country                 string
+territory               string
+contactlastname         string
+contactfirstname        string
+dealsize                string
+Time taken: 0.16 seconds, Fetched: 21 row(s)
+hive>
+
+Load data into hbase table
+
+
+hive> insert into table hbase_sales select * from sales_order_data_csv_v1;
+Query ID = cloudera_20221112024040_326e05ac-d7ef-481e-a08f-322926d96a6d
+Total jobs = 1
+Launching Job 1 out of 1
+Number of reduce tasks is set to 0 since there's no reduce operator
+Starting Job = job_1668241479952_0001, Tracking URL = http://quickstart.cloudera:8088/proxy/application_1668241479952_0001/
+Kill Command = /usr/lib/hadoop/bin/hadoop job  -kill job_1668241479952_0001
+Hadoop job information for Stage-0: number of mappers: 1; number of reducers: 0
+2022-11-12 02:41:02,604 Stage-0 map = 0%,  reduce = 0%
+2022-11-12 02:41:36,591 Stage-0 map = 100%,  reduce = 0%, Cumulative CPU 12.2 sec
+MapReduce Total cumulative CPU time: 12 seconds 200 msec
+Ended Job = job_1668241479952_0001
+MapReduce Jobs Launched:
+Stage-Stage-0: Map: 1   Cumulative CPU: 12.2 sec   HDFS Read: 372225 HDFS Write: 0 SUCCESS
+Total MapReduce CPU Time Spent: 12 seconds 200 msec
+OK
+Time taken: 85.06 seconds
+
+hbase(main):011:0> scan 'hbase_connect_hive', {'LIMIT' => 4}
+ROW                                              COLUMN+CELL
+ 10100                                           column=order:dealsize, timestamp=1668249695215, value=Small
+ 10100                                           column=order:orderlinenumber, timestamp=1668249695215, value=1
+ 10100                                           column=order:priceeach, timestamp=1668249695215, value=34.47
+ 10100                                           column=order:quantityordered, timestamp=1668249695215, value=49
+ 10100                                           column=personal:city, timestamp=1668249695215, value=Nashua
+ 10100                                           column=personal:contactfirstname, timestamp=1668249695215, value=Valarie
+ 10100                                           column=personal:contactlastname, timestamp=1668249695215, value=Young
+ 10100                                           column=personal:country, timestamp=1668249695215, value=USA
+ 10100                                           column=personal:phone, timestamp=1668249695215, value=6035558647
+ 10100                                           column=personal:postalcode, timestamp=1668249695215, value=62005
+ 10100                                           column=personal:state, timestamp=1668249695215, value=NH
+ 10100                                           column=personal:territory, timestamp=1668249695215, value=NA
+ 10100                                           column=product:msrp, timestamp=1668249695215, value=41
+ 10100                                           column=product:productcode, timestamp=1668249695215, value=S24_3969
+ 10100                                           column=product:productline, timestamp=1668249695215, value=Vintage Cars
+ 10100                                           column=sales_det:month_id, timestamp=1668249695215, value=1
+ 10100                                           column=sales_det:qtr_id, timestamp=1668249695215, value=1
+ 10100                                           column=sales_det:sales, timestamp=1668249695215, value=1689.03
+ 10100                                           column=sales_det:status, timestamp=1668249695215, value=Shipped
+ 10100                                           column=sales_det:year_id, timestamp=1668249695215, value=2003
+ 10101                                           column=order:dealsize, timestamp=1668249694687, value=Small
+ 10101                                           column=order:orderlinenumber, timestamp=1668249694687, value=2
+ 10101                                           column=order:priceeach, timestamp=1668249694687, value=53.76
+ 10101                                           column=order:quantityordered, timestamp=1668249694687, value=46
+ 10101                                           column=personal:city, timestamp=1668249694687, value=Frankfurt
+ 10101                                           column=personal:contactfirstname, timestamp=1668249694687, value=Roland
+ 10101                                           column=personal:contactlastname, timestamp=1668249694687, value=Keitel
+ 10101                                           column=personal:country, timestamp=1668249694687, value=Germany
+ 10101                                           column=personal:phone, timestamp=1668249694687, value=+49 69 66 90 2555
+ 10101                                           column=personal:postalcode, timestamp=1668249694687, value=60528
+ 10101                                           column=personal:state, timestamp=1668249694687, value=
+ 10101                                           column=personal:territory, timestamp=1668249694687, value=EMEA
+ 10101                                           column=product:msrp, timestamp=1668249694687, value=44
+ 10101                                           column=product:productcode, timestamp=1668249694687, value=S24_2022
+ 10101                                           column=product:productline, timestamp=1668249694687, value=Vintage Cars
+ 10101                                           column=sales_det:month_id, timestamp=1668249694687, value=1
+ 10101                                           column=sales_det:qtr_id, timestamp=1668249694687, value=1
+ 10101                                           column=sales_det:sales, timestamp=1668249694687, value=2472.96
+ 10101                                           column=sales_det:status, timestamp=1668249694687, value=Shipped
+ 10101                                           column=sales_det:year_id, timestamp=1668249694687, value=2003
+ 10102                                           column=order:dealsize, timestamp=1668249689693, value=Small
+ 10102                                           column=order:orderlinenumber, timestamp=1668249689693, value=1
+ 10102                                           column=order:priceeach, timestamp=1668249689693, value=50.14
+ 10102                                           column=order:quantityordered, timestamp=1668249689693, value=41
+ 10102                                           column=personal:city, timestamp=1668249689693, value=NYC
+ 10102                                           column=personal:contactfirstname, timestamp=1668249689693, value=Michael
+ 10102                                           column=personal:contactlastname, timestamp=1668249689693, value=Frick
+ 10102                                           column=personal:country, timestamp=1668249689693, value=USA
+ 10102                                           column=personal:phone, timestamp=1668249689693, value=2125551500
+ 10102                                           column=personal:postalcode, timestamp=1668249689693, value=10022
+ 10102                                           column=personal:state, timestamp=1668249689693, value=NY
+ 10102                                           column=personal:territory, timestamp=1668249689693, value=NA
+ 10102                                           column=product:msrp, timestamp=1668249689693, value=53
+ 10102                                           column=product:productcode, timestamp=1668249689693, value=S18_1367
+ 10102                                           column=product:productline, timestamp=1668249689693, value=Vintage Cars
+ 10102                                           column=sales_det:month_id, timestamp=1668249689693, value=1
+ 10102                                           column=sales_det:qtr_id, timestamp=1668249689693, value=1
+ 10102                                           column=sales_det:sales, timestamp=1668249689693, value=2055.74
+ 10102                                           column=sales_det:status, timestamp=1668249689693, value=Shipped
+ 10102                                           column=sales_det:year_id, timestamp=1668249689693, value=2003
+ 10103                                           column=order:dealsize, timestamp=1668249695365, value=Medium
+ 10103                                           column=order:orderlinenumber, timestamp=1668249695365, value=6
+ 10103                                           column=order:priceeach, timestamp=1668249695365, value=100.0
+ 10103                                           column=order:quantityordered, timestamp=1668249695365, value=42
+ 10103                                           column=personal:city, timestamp=1668249695365, value=Stavern
+ 10103                                           column=personal:contactfirstname, timestamp=1668249695365, value=Jonas
+ 10103                                           column=personal:contactlastname, timestamp=1668249695365, value=Bergulfsen
+ 10103                                           column=personal:country, timestamp=1668249695365, value=Norway
+ 10103                                           column=personal:phone, timestamp=1668249695365, value=07-98 9555
+ 10103                                           column=personal:postalcode, timestamp=1668249695365, value=4110
+ 10103                                           column=personal:state, timestamp=1668249695365, value=
+ 10103                                           column=personal:territory, timestamp=1668249695365, value=EMEA
+ 10103                                           column=product:msrp, timestamp=1668249695365, value=101
+ 10103                                           column=product:productcode, timestamp=1668249695365, value=S700_2824
+ 10103                                           column=product:productline, timestamp=1668249695365, value=Classic Cars
+ 10103                                           column=sales_det:month_id, timestamp=1668249695365, value=1
+ 10103                                           column=sales_det:qtr_id, timestamp=1668249695365, value=1
+ 10103                                           column=sales_det:sales, timestamp=1668249695365, value=4460.82
+ 10103                                           column=sales_det:status, timestamp=1668249695365, value=Shipped
+ 10103                                           column=sales_det:year_id, timestamp=1668249695365, value=2003
+4 row(s) in 0.0340 seconds
+
+hbase(main):012:0>
+
+hive> select * from hbase_sales where ordernumber = '90132';
+OK
+Time taken: 0.133 seconds
+hive>
+
+I am trying to add these value through hbase in the sales data. previously it is not there i sales data.
+
+
+hbase(main):012:0> put 'hbase_connect_hive','90132','order:orderlinenumber','55'
+0 row(s) in 0.2430 seconds
+
+hbase(main):013:0>
+
+hive> select * from hbase_sales where ordernumber = '90132';
+OK
+90132   NULL    NULL    55      NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL    NULL
+Time taken: 0.163 seconds, Fetched: 1 row(s)
+hive>
+
+
